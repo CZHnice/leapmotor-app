@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1989fa">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>零跑控车</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f7f8fa; min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/vue@3.4/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vant@4.8/lib/vant.min.js"></script>
+  <script>
+    const { createApp, ref, reactive } = Vue;
+    const { showToast } = vant;
+    const app = createApp({
+      setup() {
+        const isLoggedIn = ref(false);
+        const currentPage = ref('login');
+        const loading = ref(false);
+        const loginForm = reactive({ email: '', password: '' });
+        const vehicleStatus = reactive({ soc: 75, range: 320, ac_on: false, locked: true, indoor_temp: 24, outdoor_temp: 32 });
+        const login = () => { if (!loginForm.email || !loginForm.password) { showToast('请输入账号密码'); return; } loading.value = true; setTimeout(() => { isLoggedIn.value = true; currentPage.value = 'home'; loading.value = false; showToast('登录成功'); }, 1500); };
+        const sendCommand = (cmd) => { loading.value = true; setTimeout(() => { loading.value = false; showToast(cmd + '执行成功'); if (cmd === '锁车') vehicleStatus.locked = true; if (cmd === '解锁') vehicleStatus.locked = false; if (cmd === '开启空调') vehicleStatus.ac_on = true; if (cmd === '关闭空调') vehicleStatus.ac_on = false; }, 1000); };
+        return { isLoggedIn, currentPage, loading, loginForm, vehicleStatus, login, sendCommand, navigate: (p) => currentPage.value = p };
+      },
+      template: `<div><div v-if="currentPage === 'login'" style="min-height:100vh;background:linear-gradient(135deg,#1989fa,#0d6efd);padding:20px;display:flex;flex-direction:column;justify-content:center;"><div style="text-align:center;color:white;margin-bottom:40px;"><div style="font-size:80px;">🚗</div><h1 style="font-size:28px;margin:10px 0 5px;">零跑控车</h1><p style="opacity:0.8;">非官方车辆控制客户端</p></div><van-cell-group inset><van-field v-model="loginForm.email" label="邮箱" placeholder="零跑账号邮箱" type="email" /><van-field v-model="loginForm.password" label="密码" placeholder="账号密码" type="password" /></van-cell-group><van-button round block type="primary" style="margin-top:16px;" @click="login" :loading="loading">登录</van-button></div><div v-if="currentPage === 'home'" style="padding-bottom:60px;background:#f7f8fa;min-height:100vh;"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:white;"><div><h2 style="font-size:18px;margin:0;">零跑汽车</h2><p style="font-size:12px;color:#969799;margin:4px 0 0;">实时状态</p></div></div><div style="margin:16px;padding:24px;border-radius:16px;background:linear-gradient(135deg,#07c160,#05a050);color:white;text-align:center;"><div style="display:flex;justify-content:center;align-items:baseline;"><span style="font-size:64px;font-weight:bold;">{{ vehicleStatus.soc }}</span><span style="font-size:20px;margin-left:4px;">%</span></div><div style="margin-top:8px;font-size:16px;">预计续航 {{ vehicleStatus.range }} km</div></div><div style="margin:16px;"><h3 style="margin:0 0 12px;font-size:16px;">快捷控制</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"><div style="background:white;border-radius:12px;padding:16px;text-align:center;" @click="sendCommand(vehicleStatus.locked ? '解锁' : '锁车')"><div style="width:48px;height:48px;border-radius:50%;background:#07c160;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;color:white;"><van-icon name="lock" /></div><span style="font-size:12px;">{{ vehicleStatus.locked ? '已锁' : '已解锁' }}</span></div><div style="background:white;border-radius:12px;padding:16px;text-align:center;" @click="sendCommand('寻车')"><div style="width:48px;height:48px;border-radius:50%;background:#ff976a;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;color:white;"><van-icon name="volume-o" /></div><span style="font-size:12px;">寻车</span></div><div style="background:white;border-radius:12px;padding:16px;text-align:center;" @click="navigate('climate')"><div style="width:48px;height:48px;border-radius:50%;background:#f2f3f5;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><van-icon name="fire-o" /></div><span style="font-size:12px;">空调</span></div></div></div><van-cell-group inset style="margin:16px;"><van-cell title="车门" :value="vehicleStatus.locked ? '已锁' : '未锁'" icon="lock" /><van-cell title="温度" :value="vehicleStatus.indoor_temp + '°C / ' + vehicleStatus.outdoor_temp + '°C'" icon="temperature-o" /></van-cell-group></div><div v-if="currentPage === 'climate'" style="background:#f7f8fa;min-height:100vh;padding-bottom:60px;"><van-nav-bar title="空调控制" left-arrow @click-left="navigate('home')" /><div style="background:linear-gradient(135deg,#1989fa,#0d6efd);padding:24px;color:white;text-align:center;"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="text-align:center;"><span style="font-size:12px;opacity:0.8;">室外</span><span style="display:block;font-size:24px;font-weight:bold;margin-top:4px;">{{ vehicleStatus.outdoor_temp }}°C</span></div><div style="text-align:center;"><van-icon :name="vehicleStatus.ac_on ? 'fire' : 'fire-o'" :color="vehicleStatus.ac_on ? '#07c160' : '#969799'" size="48" /><p style="margin:8px 0 0;">{{ vehicleStatus.ac_on ? '空调已开启' : '空调已关闭' }}</p></div><div style="text-align:center;"><span style="font-size:12px;opacity:0.8;">车内</span><span style="display:block;font-size:24px;font-weight:bold;margin-top:4px;">{{ vehicleStatus.indoor_temp }}°C</span></div></div></div><van-cell-group inset style="margin-top:16px;"><van-cell title="开启空调" @click="sendCommand('开启空调')"><template #right-icon><van-button type="primary" size="small">开启</van-button></template></van-cell><van-cell title="关闭空调" @click="sendCommand('关闭空调')"><template #right-icon><van-button type="default" size="small">关闭</van-button></template></van-cell></van-cell-group></div><van-tabbar v-if="isLoggedIn" v-model="currentPage"><van-tabbar-item icon="home-o" name="home" @click="navigate('home')">首页</van-tabbar-item><van-tabbar-item icon="fire-o" name="climate" @click="navigate('climate')">空调</van-tabbar-item></van-tabbar></div>`
+    });
+    app.use(vant);
+    app.mount('#app');
+  </script>
+</body>
+</html>
